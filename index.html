@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comprador EVERGREEN TBR — Top Neumaticos</title>
+<style>
+  :root { --primary:#0b5fa3; --bg:#f4f6f8; --card:#fff; --border:#e0e4e8; --ok:#1a8f4c; --bad:#c0392b; }
+  * { box-sizing:border-box; }
+  body {
+    font-family:'Segoe UI',Arial,sans-serif;
+    background:var(--bg);
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#222;
+  }
+  .card {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:36px 40px;
+    max-width:440px;
+    width:90%;
+    text-align:center;
+    box-shadow:0 4px 18px rgba(0,0,0,.06);
+  }
+  .card h1 { font-size:20px; margin:0 0 6px; color:var(--primary); }
+  .card p.sub { font-size:13px; color:#666; margin:0 0 26px; }
+  input[type="password"], input[type="text"] {
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:14px;
+    margin-bottom:14px;
+  }
+  .btn {
+    background:var(--primary);
+    color:#fff;
+    border:none;
+    padding:12px 20px;
+    border-radius:8px;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    width:100%;
+    transition:opacity .2s;
+  }
+  .btn:hover { opacity:.9; }
+  .btn:disabled { opacity:.6; cursor:not-allowed; }
+  .status { margin-top:18px; font-size:13px; color:#555; min-height:20px; }
+  .spinner {
+    display:inline-block;
+    width:16px; height:16px;
+    border:2px solid #cfe3f5;
+    border-top-color:var(--primary);
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+    vertical-align:middle;
+    margin-right:8px;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .error { color:var(--bad); font-weight:600; }
+  .backup-link {
+    display:none;
+    margin-top:16px;
+    padding-top:16px;
+    border-top:1px solid var(--border);
+    font-size:13px;
+  }
+  .backup-link a {
+    color:var(--primary);
+    font-weight:600;
+    text-decoration:none;
+  }
+  .backup-link a:hover { text-decoration:underline; }
+  footer { margin-top:22px; font-size:11px; color:#aaa; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>🛒 Comprador EVERGREEN TBR</h1>
+  <p class="sub">Top Neumaticos S.R.L. — Argentina Special Price 2H 2025</p>
+
+  <input type="password" id="claveInput" placeholder="Clave de acceso" autocomplete="off">
+  <button class="btn" id="btnGenerar" onclick="generar()">Generar comprador</button>
+
+  <div class="status" id="status"></div>
+
+  <div class="backup-link" id="backupLink">
+    Si no se abrió la pestaña automáticamente:<br>
+    <a id="backupA" href="#" target="_blank" rel="noopener">Abrir el comprador acá</a>
+  </div>
+
+  <footer>Ing. Tagliabue Fabrizio Nicolas — Área de mejora continua</footer>
+</div>
+
+<script>
+const WEBHOOK_URL = 'https://envy-recollect-last.ngrok-free.dev/webhook/TBR-EV';
+
+let timerInterval = null;
+let segundos = 0;
+
+function actualizarStatus(msg, conSpinner) {
+  const statusEl = document.getElementById('status');
+  statusEl.innerHTML = (conSpinner ? '<span class="spinner"></span>' : '') + msg;
+}
+
+function iniciarCronometro() {
+  segundos = 0;
+  timerInterval = setInterval(() => {
+    segundos++;
+    actualizarStatus(`Generando comprador... (${segundos}s)`, true);
+  }, 1000);
+}
+
+function detenerCronometro() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+async function generar() {
+  const clave = document.getElementById('claveInput').value.trim();
+  const btn = document.getElementById('btnGenerar');
+  const backupDiv = document.getElementById('backupLink');
+
+  if (!clave) {
+    actualizarStatus('Ingresá la clave de acceso.', false);
+    document.getElementById('status').classList.add('error');
+    return;
+  }
+
+  document.getElementById('status').classList.remove('error');
+  backupDiv.style.display = 'none';
+  btn.disabled = true;
+  iniciarCronometro();
+
+  try {
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'X-Auth-Key': clave,
+        'ngrok-skip-browser-warning': 'true'
+      }
+    });
+
+    detenerCronometro();
+
+    if (!response.ok) {
+      throw new Error('Respuesta del servidor: ' + response.status);
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+
+    const nuevaVentana = window.open(url, '_blank');
+
+    document.getElementById('backupA').href = url;
+    backupDiv.style.display = 'block';
+
+    if (nuevaVentana) {
+      actualizarStatus('✅ Comprador generado.', false);
+    } else {
+      actualizarStatus('✅ Comprador generado. El navegador bloqueó la pestaña automática — usá el link de abajo.', false);
+    }
+
+  } catch (err) {
+    detenerCronometro();
+    document.getElementById('status').classList.add('error');
+    actualizarStatus('❌ Error al generar el comprador: ' + err.message + '. Verificá la clave y que el túnel esté activo.', false);
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>
