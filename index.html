@@ -29,14 +29,6 @@
   }
   .card h1 { font-size:20px; margin:0 0 6px; color:var(--primary); }
   .card p.sub { font-size:13px; color:#666; margin:0 0 26px; }
-  input[type="password"], input[type="text"] {
-    width:100%;
-    padding:10px 12px;
-    border:1px solid var(--border);
-    border-radius:8px;
-    font-size:14px;
-    margin-bottom:14px;
-  }
   .btn {
     background:var(--primary);
     color:#fff;
@@ -86,7 +78,6 @@
   <h1>🛒 Comprador EVERGREEN TBR</h1>
   <p class="sub">Top Neumaticos S.R.L. — Argentina Special Price 2H 2025</p>
 
-  <input type="password" id="claveInput" placeholder="Clave de acceso" autocomplete="off">
   <button class="btn" id="btnGenerar" onclick="generar()">Generar comprador</button>
 
   <div class="status" id="status"></div>
@@ -124,15 +115,8 @@ function detenerCronometro() {
 }
 
 async function generar() {
-  const clave = document.getElementById('claveInput').value.trim();
   const btn = document.getElementById('btnGenerar');
   const backupDiv = document.getElementById('backupLink');
-
-  if (!clave) {
-    actualizarStatus('Ingresá la clave de acceso.', false);
-    document.getElementById('status').classList.add('error');
-    return;
-  }
 
   document.getElementById('status').classList.remove('error');
   backupDiv.style.display = 'none';
@@ -143,7 +127,6 @@ async function generar() {
     const response = await fetch(WEBHOOK_URL, {
       method: 'POST',
       headers: {
-        'X-Auth-Key': clave,
         'ngrok-skip-browser-warning': 'true'
       }
     });
@@ -171,7 +154,7 @@ async function generar() {
   } catch (err) {
     detenerCronometro();
     document.getElementById('status').classList.add('error');
-    actualizarStatus('❌ Error al generar el comprador: ' + err.message + '. Verificá la clave y que el túnel esté activo.', false);
+    actualizarStatus('❌ Error al generar el comprador: ' + err.message + '. Verificá que el túnel esté activo.', false);
   } finally {
     btn.disabled = false;
   }
